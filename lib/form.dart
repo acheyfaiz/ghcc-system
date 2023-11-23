@@ -24,6 +24,10 @@ class _FormWhatsappState extends State<FormWhatsapp> {
   final TextEditingController _sparePart = TextEditingController();
   final TextEditingController _hargaDepo = TextEditingController();
 
+  final TextEditingController _namaKlinik = TextEditingController();
+  final TextEditingController _modelAlat = TextEditingController();
+  final TextEditingController _hargaAlat = TextEditingController();
+
   @override
   void dispose() {
     // TODO: implement dispose
@@ -38,6 +42,10 @@ class _FormWhatsappState extends State<FormWhatsapp> {
     _kosRepair.dispose();
     _sparePart.dispose();
     _hargaDepo.dispose();
+
+    _namaKlinik.dispose();
+    _modelAlat.dispose();
+    _hargaAlat.dispose();
     super.dispose();
   }
 
@@ -58,20 +66,29 @@ class _FormWhatsappState extends State<FormWhatsapp> {
 
           const SizedBox(height: 30),
 
+          _pilihan(),
+
           FormCustomer(controller: _custTitle, hint: 'Gelaran Pesakit', index: 1),
           FormCustomer(controller: _custName, hint: 'Nama Pesakit', index: 1),
           FormCustomer(controller: _custNohp, hint: 'No Tel Pesakit', index: 2),
-          FormCustomer(controller: _tarikh, hint: 'Tarikh', index: 3),
-          FormCustomer(controller: _masa, hint: 'Masa', index: 4),
+          _selectedValue == "Hearing Aid Purchase" ? const SizedBox() : FormCustomer(controller: _tarikh, hint: 'Tarikh', index: 3),
+          _selectedValue == "Hearing Aid Purchase" ? const SizedBox() : FormCustomer(controller: _masa, hint: 'Masa', index: 4),
 
           _selectedValue == "Deposit Repair Hearing Aid" ? FormCustomer(controller: _jenisRepair, hint: 'Jenis Repair', index: 5) : const SizedBox(),
           _selectedValue == "Deposit Repair Hearing Aid" ? FormCustomer(controller: _sparePart, hint: 'Spare Part Diganti', index: 5) : const SizedBox(),
           _selectedValue == "Deposit Repair Hearing Aid" ? FormCustomer(controller: _kosRepair, hint: 'Kos Repair', index: 5) : const SizedBox(),
           _selectedValue == "Deposit Repair Hearing Aid" ? FormCustomer(controller: _hargaDepo, hint: 'Deposit', index: 5) : const SizedBox(),
 
-          _pilihan(),
+          _selectedValue == "Hearing Aid Purchase" ? FormCustomer(controller: _modelAlat, hint: 'Model Alat', index: 6) : const SizedBox(),
+          _selectedValue == "Hearing Aid Purchase" ? FormCustomer(controller: _namaKlinik, hint: 'Nama Klinik', index: 6) : const SizedBox(),
+          _selectedValue == "Hearing Aid Purchase" ? FormCustomer(controller: _hargaAlat, hint: 'Harga Alat', index: 6) : const SizedBox(),
+          _selectedValue == "Hearing Aid Purchase" ? FormCustomer(controller: _hargaDepo, hint: 'Harga Deposit', index: 6) : const SizedBox(),
+
           const SizedBox(height: 30),
 
+          ButtonGenerate(ontap: ()=> _compute(_selectedValue ?? "")),
+
+          const SizedBox(height: 30),
           _area(),
 
           const SizedBox(height: 30),
@@ -93,6 +110,7 @@ class _FormWhatsappState extends State<FormWhatsapp> {
     "Deposit Repair Hearing Aid",
     "Impression Taking",
     "Appointment Follow up Hospital",
+    "Hearing Aid Purchase",
   ];
 
   Widget _pilihan(){
@@ -109,6 +127,9 @@ class _FormWhatsappState extends State<FormWhatsapp> {
       onChanged: (String? newValue) {
         setState(() {
           _selectedValue = newValue;
+          /// reset balik harga depo
+          /// taknak tersalah keyin
+          _hargaDepo.text = "";
         });
         _compute(_selectedValue ?? "");
       },
@@ -143,14 +164,11 @@ class _FormWhatsappState extends State<FormWhatsapp> {
         MaterialButton(
           color: Colors.blue,
           onPressed: (){
-            // copy text dulu
+            /// copy text dulu
             Clipboard.setData(ClipboardData(text: _fulltext.text)).then((_){
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                onVisible: (){
-                  // HapticFeedback.vibrate().timeout(const Duration(milliseconds: 1500));
-                  // HapticFeedback.heavyImpact();
-                },
-                duration: const Duration(seconds: 4),
+                onVisible: (){},
+                duration: const Duration(seconds: 3),
                 behavior: SnackBarBehavior.floating,
                 //backgroundColor: const Color(0xfffcf2f2),
                 content: const Text("Sudah disalin", style: TextStyle(
@@ -160,7 +178,8 @@ class _FormWhatsappState extends State<FormWhatsapp> {
                 )),
               ));
 
-              // then parse to ws url
+              /// then parse to ws url untuk direct ke no tel customer
+              /// then, user kena paste sendiri
               launchWhatsApp(phone: _custNohp.text, message: "");
             });
 
@@ -244,6 +263,43 @@ class _FormWhatsappState extends State<FormWhatsapp> {
           "Sekiranya ${_custTitle.text} mempunyai pertanyaan lanjut, boleh terus hubungi kami di talian ${Constant().hpoffice} / ${Constant().hpmobile}.\n\nTerima kasih.";
     }
 
+    else if(text == "Hearing Aid Purchase"){
+      _fulltext.text = '''
+Assalamualaikum dan selamat pagi ${_custTitle.text},
+
+Kami dari Global Hearing Care Centre Segamat, pusat alat bantu dengar. Kami ingin maklumkan berkenaan pembelian alat bantu dengar untuk *${_custTitle.text} ${_custName.text}* yang dirujuk dari ${_namaKlinik.text}.
+
+Berikut adalah maklumat alat berkenaan untuk rujukan ${_custTitle.text}:
+
+Model: *${_modelAlat.text}* 
+Harga: *RM ${_hargaAlat.text}/unit* 
+Deposit: *RM ${_hargaDepo.text}*
+Jaminan: *2 Tahun*
+
+Jika ${_custTitle.text} setuju untuk membeli alat berkenaan, ${_custTitle.text} boleh membuat bayaran deposit dahulu ke akaun kami secara online transfer, ATM transfer atau tunai :
+(Sila sertakan bukti pembayaran)
+
+${Constant().bankacc}
+
+Untuk makluman ${_custTitle.text}, pembayaran deposit ini tidak akan dikembalikan semula sekiranya ${_custTitle.text} membatalkan pembelian di saat akhir.
+
+Proses pembelian alat ini akan mengambil masa 14 hari bekerja. Pihak kami akan menghubungi ${_custTitle.text} untuk mengaturkan temujanji pemakaian alat.
+
+Sekiranya ${_custTitle.text} mempunyai pertanyaan lain, ${_custTitle.text} boleh hubungi kami di talian ${Constant().hpoffice} / ${Constant().hpmobile}.
+
+Terima kasih.
+.
+.
+.
+Alamat:
+Global Hearing Care Centre
+No. 50 Bawah, PTD 16455 Kedai/ Pejabat (JGST24) Jalan Genuang, Kampung Abdullah, 85000 Segamat, Johor
+
+Waktu Operasi:
+Isnin - Jumaat : 9.00 pagi - 6.00 petang
+''';
+    }
+
   }
 
 }
@@ -263,7 +319,10 @@ class FormCustomer extends StatelessWidget {
             index == 1 ? Icons.person :
             index == 2 ? Icons.smartphone :
             index == 3 ? Icons.calendar_month :
-            index == 4 ? Icons.timelapse : Icons.settings),
+            index == 4 ? Icons.timelapse :
+            index == 5 ? Icons.settings :
+              Icons.all_out_outlined
+        ),
         labelText: hint,
       ),
       onSaved: (String? value) {
@@ -272,5 +331,22 @@ class FormCustomer extends StatelessWidget {
     );
   }
 }
+
+class ButtonGenerate extends StatelessWidget {
+  final GestureTapCallback ontap;
+  const ButtonGenerate({super.key, required this.ontap});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialButton(
+      color: Colors.grey[400],
+      onPressed: ontap,
+      child: const Text("Generate", style: TextStyle(
+          color: Colors.black
+      )),
+    );
+  }
+}
+
 
 
